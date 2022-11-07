@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <UserSecretsId>dotnet-SyncService-12FC9CE5-A46C-479A-8C23-BA64D097EF4D</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="10.1.1" />
+    <PackageReference Include="Dotmim.Sync.SqlServer" Version="0.9.1" />
+    <PackageReference Include="Dotmim.Sync.Web.Client" Version="0.9.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="5.0.1" />
+    <PackageReference Include="System.Management" Version="5.0.0" />
+  </ItemGroup>
+</Project>
