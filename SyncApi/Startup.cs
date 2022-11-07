@@ -33,8 +33,6 @@ namespace SyncApi
 
             services.AddDistributedMemoryCache();
             services.AddSession(options => options.IdleTimeout = TimeSpan.FromMinutes(30));
-
-
             services.AddMvc();
             services.AddHttpContextAccessor();
 
@@ -42,36 +40,43 @@ namespace SyncApi
             // [Required] Get a connection string for your server data source
             var connectionString = Configuration.GetSection("ConnectionStrings")["DefaultConnection"];
 
-            // [Optional] Set the web server Options
             var options = new SyncOptions
             {
                 SnapshotsDirectory = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                "Snapshots"),
+                  Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                  "Snapshots"),
                 CleanMetadatas = true,
                 ConflictResolutionPolicy = ConflictResolutionPolicy.ServerWins
-
             };
-
-
-            //string tblsJson =  System.IO.File.ReadAllText("json-schema.json");
-            //var tbls = Newtonsoft.Json.JsonConvert.DeserializeObject<List<SyncTable>>(tblsJson);
 
             /// DownLoad Only Tables
             var tblsDownLoadOnly = new string[] {
-
+                 "Branch",
+                 "BranchItemPrice",
+                 "BranchItemPrinterlog",
+                 "BranchPaymentAllowed",
+                 "BranchPOSConfig",
+                 "BranchZone"
             };
 
 
+            //Upload Only Tables
             var tblsUploadOnly = new string[] {
-
+               "POS_Sales",
+               "POS_SalesDetail",
+               "POS_TempSales",
+               "POS_TempSalesDetail"
             };
 
 
             var tblsUpDown = new string[] {
 
-
-
+                "CustomerTitle",
+                "Customer",
+                "CustomerGroup",
+                "Zone",
+                "CustomerZoneAddress",
+                "Customer_AccountStatement"
             };
 
             // [Optional] Defines the schema prefix and suffix for all generated objects
@@ -82,38 +87,60 @@ namespace SyncApi
                 StoredProceduresSuffix = "",
                 TrackingTablesPrefix = "s",
                 TrackingTablesSuffix = ""
-
             };
 
-
-
-            SetupTable table;
             foreach (var obj in tblsDownLoadOnly)
-            {
-                table = new SetupTable();
-                table.TableName = obj;
-                table.SyncDirection = SyncDirection.DownloadOnly;
-                setup.Tables.Add(table);
-            }
-
+                setup.Tables.Add(new SetupTable { TableName = obj, SyncDirection = SyncDirection.DownloadOnly });
 
             foreach (var obj in tblsUploadOnly)
-            {
-                table = new SetupTable();
-                table.TableName = obj;
-                table.SyncDirection = SyncDirection.UploadOnly;
-                setup.Tables.Add(table);
-
-            }
-
+                setup.Tables.Add(new SetupTable { TableName = obj, SyncDirection = SyncDirection.UploadOnly });
 
             foreach (var obj in tblsUpDown)
-            {
-                table = new SetupTable();
-                table.TableName = obj;
-                table.SyncDirection = SyncDirection.Bidirectional;
-                setup.Tables.Add(table);
-            }
+                setup.Tables.Add(new SetupTable { TableName = obj, SyncDirection = SyncDirection.Bidirectional });
+
+            #region DownLoadOnlyConditions
+
+
+            // Pull Branch Prices By Branch ID
+            var BranchItemPrice = new SetupFilter("BranchItemPrice");
+            BranchItemPrice.AddParameter("BranchID", "BranchItemPrice", true);
+            BranchItemPrice.AddWhere("BranchID", "BranchItemPrice", "BranchID");
+            setup.Filters.Add(BranchItemPrice);
+
+            // Pull Branch Zones By Branch
+            var BranchZone = new SetupFilter("BranchZone");
+            BranchZone.AddParameter("BranchID", "BranchZone", true);
+            BranchZone.AddWhere("BranchID", "BranchZone", "BranchID");
+            setup.Filters.Add(BranchZone);
+
+
+            #endregion
+
+            #region UploadOnlyConditions
+
+            // push  Branch POS_TempSales By Branch ID
+            var POS_TempSales = new SetupFilter("POS_TempSales");
+            POS_TempSales.AddParameter("BranchID", "POS_TempSales", true);
+            POS_TempSales.AddWhere("BranchID", "POS_TempSales", "BranchID");
+            setup.Filters.Add(POS_TempSales);
+
+
+            var POS_TempSalesDetail = new SetupFilter("POS_TempSalesDetail");
+            POS_TempSalesDetail.AddParameter("BranchID", "POS_TempSalesDetail", true);
+            POS_TempSalesDetail.AddWhere("BranchID", "POS_TempSalesDetail", "BranchID");
+            setup.Filters.Add(POS_TempSalesDetail);
+
+            var POS_Sales = new SetupFilter("POS_Sales");
+            POS_Sales.AddParameter("BranchID", "POS_Sales", true);
+            POS_Sales.AddWhere("BranchID", "POS_Sales", "BranchID");
+            setup.Filters.Add(POS_Sales);
+
+            var POS_SalesDetail = new SetupFilter("POS_SalesDetail");
+            POS_SalesDetail.AddParameter("BranchID", "POS_SalesDetail", true);
+            POS_SalesDetail.AddWhere("BranchID", "POS_SalesDetail", "BranchID");
+            setup.Filters.Add(POS_SalesDetail);
+
+            #endregion
 
             // [Required] add a SqlSyncProvider acting as the server hub
             services.AddSyncServer<SqlSyncProvider>(connectionString, setup, options);

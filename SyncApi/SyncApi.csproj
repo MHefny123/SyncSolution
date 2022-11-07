@@ -8,10 +8,9 @@
 
 
   <ItemGroup>
-    <PackageReference Include="Dotmim.Sync.Core" Version="0.9.1" />
-    <PackageReference Include="Dotmim.Sync.SqlServer" Version="0.9.1" />
-    <PackageReference Include="Dotmim.Sync.SqlServer.ChangeTracking" Version="0.9.1" />
-    <PackageReference Include="Dotmim.Sync.Web.Server" Version="0.9.1" />
+    <PackageReference Include="Dotmim.Sync.Core" Version="0.9.7" />
+    <PackageReference Include="Dotmim.Sync.SqlServer" Version="0.9.7" />
+    <PackageReference Include="Dotmim.Sync.Web.Server" Version="0.9.7" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Extensions" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Session" Version="2.2.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.14.0" />

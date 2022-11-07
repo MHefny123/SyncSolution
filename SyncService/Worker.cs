@@ -17,7 +17,7 @@ namespace SyncService
         private readonly ILogger<Worker> _logger;
 
 
-        private static string ClientConnection = @"Data Source=.\ENTERPRISE;Initial Catalog=Aqua_V808;Trusted_Connection=True;User Id=SA;Password=Password;Integrated Security=false;";
+        private static string clientConnectionString = $"Data Source=(localdb)\\mssqllocaldb; Initial Catalog=Aqua_V808;Integrated Security=true;";
 
 
         public Worker(ILogger<Worker> logger)
@@ -31,72 +31,51 @@ namespace SyncService
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                try
+
+                int SyncInterval = 60000;
+                string ClientID = "808";
+
+                ///Local 
+                var serverOrchestrator = new WebRemoteOrchestrator("https://localhost:44371/api/sync/" + ClientID);
+
+                // Second provider is using plain old Sql Server provider, relying on triggers and tracking tables to create the sync environment
+                var clientProvider = new SqlSyncProvider(clientConnectionString);
+
+                // Set the web server Options
+                var options = new SyncOptions
                 {
-                    int SyncInterval =  60000;
-                    string ClientID = "808";
+                    BatchDirectory = Path.Combine(SyncOptions.GetDefaultUserBatchDirectory(), "client")
+                };
+                // Creating an agent that will handle all the process
+                var agent = new SyncAgent(clientProvider, serverOrchestrator, options);
+                var progress = new SynchronousProgress<ProgressArgs>(pa => Console.WriteLine($"{pa.ProgressPercentage:p}\t {pa.Message}"));
 
-
-
-                    ///Local 
-                    var serverOrchestrator = new WebClientOrchestrator("http://80.90.167.136:5088/api/Sync/" + ClientID);
-
-                    // Second provider is using plain old Sql Server provider, relying on triggers and tracking tables to create the sync environment
-                    var clientProvider = new SqlSyncProvider(ClientConnection);
-
-                    // Set the web server Options
-                    var options = new SyncOptions
+                var parameters = new SyncParameters { { "BranchID", 1 } };
+                do
+                {
+                    try
                     {
-                        BatchDirectory = Path.Combine(SyncOptions.GetDefaultUserBatchDiretory(), "client")
-                    };
-                    // Creating an agent that will handle all the process
-                    var agent = new SyncAgent(clientProvider, serverOrchestrator, options);
-                    var progress = new SynchronousProgress<ProgressArgs>(pa => Console.WriteLine($"{pa.ProgressPercentage:p}\t {pa.Message}"));
+                        // Launch the sync process
+                        var syncResult = await agent.SynchronizeAsync(parameters, progress);
 
-                    if (!agent.Parameters.Contains("BranchID"))
-                        //agent.Parameters.Add("BranchID", 1);
-                        agent.Parameters.Add("BranchID",1);
-                    do
+                                              // Write results
+                        Console.WriteLine(syncResult);
+
+
+                    }
+                    catch (Exception ex)
                     {
-                        try
-                        {
-                            // Launch the sync process
-                            var s1 = await agent.SynchronizeAsync(progress);
-                            if (s1.TotalChangesUploaded > 0)
-                            {
-                                Console.Beep(700, 5000);
-
-                            }
-                            if (s1.TotalChangesDownloaded > 0)
-                            {
-                                Console.Beep(700, 5000);
-                            }
-                            // Write results
-                            Console.WriteLine(s1);
-
-                          
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.Beep(5000, 3000);
-                            
-                        }
-                        Console.WriteLine("Waiting For New DB Changes!");
-
-                        await Task.Delay(SyncInterval, stoppingToken);
+                        Console.WriteLine(ex.Message);
                     }
 
+                    Console.WriteLine("Waiting For New DB Changes!");
 
-                    while (!stoppingToken.IsCancellationRequested);
-
-                    Console.WriteLine("End");
-                }
-                catch (Exception ex)
-                {
-                    Console.Beep(5000, 3000);
-                    
+                    await Task.Delay(SyncInterval, stoppingToken);
                 }
 
+                while (!stoppingToken.IsCancellationRequested);
+
+                Console.WriteLine("End");
             }
         }
     }
